@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu/jre:8-22.04_44
 
 RUN apt-get update && apt-get install -y wget apt-utils gnupg2 software-properties-common locales libfreetype6 ntp
 RUN wget -O- https://apt.corretto.aws/corretto.key | apt-key add - 
