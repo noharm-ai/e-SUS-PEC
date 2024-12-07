@@ -1,7 +1,9 @@
 # eSUS PEC
 
 Compatível e testado com  
- ![version](https://img.shields.io/badge/version-5.2.38-green) ![version](https://img.shields.io/badge/version-5.2.28-green) ![version](https://img.shields.io/badge/version-4.2.8-red) ![version](https://img.shields.io/badge/version-4.2.7-red)
+ ![version](https://img.shields.io/badge/version-5.3.19-green)
+
+**BREAKING CHANGE:** Desde a versão 5.3 o certificado SSL é autogerenciado e a versão Java utilizada é a 17 LTS. A última versão desse docker não funcionará para versões anteriores
 
 É um sistema bastante utilizado por profissionais de saúde da Atenção Básica para registros de pacientes e dados de saúde. Esse repositório se propõe a criar uma estrutura docker com linux para viabilizar o deploy do sistema em qualquer ambiente que tenha docker e facilitar a instalação e atualização do sistema [e-SUS PEC](https://sisaps.saude.gov.br/esus/)
 
@@ -10,7 +12,7 @@ Compatível e testado com
 Baixe o jar da aplicação e execute o script de instalação para um banco de dados novo, use o argumento `-t` se quiser que a versão instalada seja de treinamento:
 
 ```sh
-wget https://https://arquivos.esusab.ufsc.br/PEC/c0d1d77e70c98177/5.2.38/eSUS-AB-PEC-5.2.38-Linux64.jar
+wget https://arquivos.esusab.ufsc.br/PEC/e925378f33a611e7/5.3.19/eSUS-AB-PEC-5.3.19-Linux64.jar
 sh build.sh -f eSUS-AB-PEC-5.2.38-Linux64.jar
 ```
 
@@ -31,8 +33,9 @@ Dúvidas? Colaboração? Ideias? Entre em contato pelo [WhatsApp](https://wa.me
 2. [Preparando pacotes](#preparando-pacotes)
 3. [Instalação do PEC](#instalacao-pec)
 4. [Versão de Treinamento](#versao-treinamento)
-5. [Migração de Versão PEC](#migrando-versao)
-6. [Outras informações relevantes](#outros)
+5. [Certificado SSL](#certificado-ssl)
+6. [Migração de Versão PEC](#migrando-versao)
+7. [Outras informações relevantes](#outros)
 
 Ajude esse e outros projetos OpenSource para saúde: [Patrocínio](#patrocinio)
 
@@ -104,6 +107,22 @@ Apoie também esse e outros projetos.
       <img src="https://img.shields.io/badge/Mande_uma_menssagem-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp Badge"/>
   </a>
 </div>
+
+## Certificado SSL (Processo semi automatizado) <a id="certificado-ssl"></a>
+
+O certificado SSL é importante para podermos utilizar o 
+HTTPS (Habilita video chamadas e prescrição eletrônica, além de ser pré-requisito para login GOV.br). [Mais informações](https://saps-ms.github.io/Manual-eSUS_APS/docs/Apoio%20a%20Implanta%C3%A7%C3%A3o/Certificado_Https_Linux/)
+
+O métido utilizado para verificação do DNS é o DNS-1, vai ser necessário cadastrar um registro TXT no DNS, para isso fique atento ao prompt no terminal ao executar o primeiro passo abaixo:
+
+```sh
+# https://github.com/filiperochalopes/e-SUS-PEC/issues/14
+make generate-ssl DNS=meu-dominio.com
+sudo chmod -R 755 ./certificates
+make install-ssl DNS=meu-dominio.com PASS=senha-certificado
+```
+
+Para renovar basta repetir o processo acima.
 
 ## Versão de Treinamento <a id="versao-treinamento"></a>
 
@@ -217,8 +236,9 @@ docker-compose up -d
 docker-compose up -d esus_app /opt/e-SUS/webserver/standalone.sh
 ```
 
-## Bugs Conhecidos (Known Issues)
+## Bugs Conhecidos (Known Issues) / Troubleshoot / Q&A / FAQ
 
+- O Java 8 só funciona com OpenSSL 1.1, em caso de uso do OpenSSL mais recente 3.X, não irá funcionar as chaves PKCS12 para SSL, será necessário o uso das chaves *.jks nesses casos
 - Testes realizados com versão `4.2.7` e `4.2.8` não foram bem sucedidos
 - A versão 4.2.8 está com erro no formulário de cadastro, nas requisições ao banco de dados, pelo endpoint graphql, retorna "Não autorizado"
 - Verificar sempre a memória caso queira fazer depois em servidor. Senão ele trará no console um `Killed` inesperado https://stackoverflow.com/questions/37071106/spring-boot-application-quits-unexpectedly-with-killed
@@ -226,4 +246,4 @@ docker-compose up -d esus_app /opt/e-SUS/webserver/standalone.sh
 
 ## Lista de Versões para Download
 
-[![version](https://img.shields.io/badge/version-5.2.38-blue)](https://https://arquivos.esusab.ufsc.br/PEC/c0d1d77e70c98177/5.2.38/eSUS-AB-PEC-5.2.38-Linux64.jar) [![version](https://img.shields.io/badge/version-5.2.28-blue)](https://arquivos.esusab.ufsc.br/PEC/mtRazOmMxfBpkEMK/5.2.28/eSUS-AB-PEC-5.2.28-Linux64.jar)
+[![version](https://img.shields.io/badge/version-5.3.19-blue)](https://arquivos.esusab.ufsc.br/PEC/e925378f33a611e7/5.3.19/eSUS-AB-PEC-5.3.19-Linux64.jar)

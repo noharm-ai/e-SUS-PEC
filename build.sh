@@ -8,6 +8,7 @@ training=''
 cache=''
 filename=''
 dumpfile=''
+https_domain=''
 use_external_db=false
 
 while getopts "d:f:tce" flag; do
@@ -15,6 +16,7 @@ while getopts "d:f:tce" flag; do
         f) filename=${OPTARG};;
         t) training='-treinamento';;
         d) dumpfile=${OPTARG};;
+        h) https_domain=${OPTARG};;
         c) cache='--no-cache';;
         e) use_external_db=true;;
         \?)
@@ -23,6 +25,7 @@ while getopts "d:f:tce" flag; do
             -f {nome do arquivo ou URL} para especificar o arquivo jar a ser utilizado,
             -c para utilizar o cache quando estiver rodando build das imagens docker e
             -d para redirecionar a um dump de banco de dados,
+            -h para determinar o domínio HTTPS a ser utilizado para gerar o certificado,
             -t para versão de treinamento,
             -e para utilizar banco de dados externo especificado em .env.external-db
             são consideradas válidas${NC}"
@@ -39,6 +42,7 @@ if $use_external_db; then
     if [ -f ".env.external-db" ]; then
         export $(grep -v '^#' .env.external-db | xargs)
         filename=$FILENAME
+        https_domain=$HTTPS_DOMAIN
     else
         echo "${RED}Arquivo .env.external-db não encontrado.${NC}"
         exit 1
@@ -95,9 +99,9 @@ if $use_external_db; then
     jdbc_url="jdbc:postgresql://$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB?ssl=true&sslmode=allow&sslfactory=org.postgresql.ssl.NonValidatingFactory" 
     # Se use_external_db é true, é para utilizar um banco de dados externo
     echo "\n\n*******************"
-    echo "docker compose --progress plain -f docker-compose.external-db.yml build $cache --build-arg JAR_FILENAME=$jar_filename --build-arg DB_URL=$jdbc_url"
+    echo "docker compose --progress plain -f docker-compose.external-db.yml build $cache --build-arg JAR_FILENAME=$jar_filename --build-arg HTTPS_DOMAIN=$https_domain --build-arg DB_URL=$jdbc_url"
     echo "*******************\n\n"
-    docker compose --progress plain -f docker-compose.external-db.yml build $cache --build-arg JAR_FILENAME=$jar_filename --build-arg DB_URL=$jdbc_url
+    docker compose --progress plain -f docker-compose.external-db.yml build $cache --build-arg JAR_FILENAME=$jar_filename --build-arg HTTPS_DOMAIN=$https_domain --build-arg DB_URL=$jdbc_url
     docker compose -f docker-compose.external-db.yml up -d
 else
     # Se use_external_db é false, não é para utilizar um banco de dados externo
@@ -115,8 +119,21 @@ else
 
     # Na hora de fazer o build não pode instalar os pacotes porque depende do banco de dados, por isso deve ser instalado por fora
     echo "${GREEN}Instalando pacotes do e-SUS-PEC${NC}"
-    docker exec -it esus_app bash -c "sh /var/www/html/install.sh"
+    docker compose exec -it pec bash -c "sh /var/www/html/install.sh"
     # Executando novamente o ENTRYPOINT do docker file, dessa vez com os pacotes já instalados.
     echo "${GREEN}Executando entrypoint do e-SUS-PEC${NC}"
-    docker exec -it esus_app bash -c "sh /var/www/html/run.sh"
+    docker compose exec -it pec bash -c "sh /var/www/html/run.sh"
 fi
+
+# Verifica o arquivo /etc/pec.config
+# if [ -f "/etc/pec.config" ]; then
+#     success=$(jq -r '.success' /etc/pec.config)
+#     if [ "$success" == "true" ]; then
+#         echo "O arquivo /etc/pec.config está configurado corretamente com sucesso."
+#     else
+#         echo "${RED}Configuração do arquivo /etc/pec.config falhou.${NC}"
+#         exit 1
+#     fi
+# else
+#     echo "${RED}Arquivo /etc/pec.config não encontrado.${NC}"
+# fi
