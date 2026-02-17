@@ -71,10 +71,13 @@ ENV POSTGRES_PASS=${POSTGRES_PASS}
 ENV POSTGRES_USER=${POSTGRES_USER}
 ENV HTTPS_DOMAIN=${HTTPS_DOMAIN}
 
-# criando diretórios para uso posterior
-RUN mkdir -p /opt/e-SUS/webserver/chaves
-RUN mkdir /backups
-RUN mkdir -p /var/www/html
+# Cria usuário não-root
+RUN groupadd -r app && useradd -r -g app -d /home/app -m -s /usr/sbin/nologin app
+
+# Diretórios da app (cria + ajusta dono)
+RUN mkdir -p /opt/e-SUS/webserver/chaves /backups /var/www/html \
+ && chown -R app:app /opt/e-SUS /backups /var/www/html
+
 WORKDIR /var/www/html
 
 COPY ./${JAR_FILENAME} ${JAR_FILENAME}
@@ -85,6 +88,11 @@ COPY *.sql /backups
 COPY *.backup /backups
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod 755 /entrypoint.sh \
+ && chown app:app /entrypoint.sh ${JAR_FILENAME} install.sh \
+ && chmod 640 /backups/* || true
+ 
+# A partir daqui, roda como usuário não-admin
+USER app
 
 ENTRYPOINT ["/entrypoint.sh"]
